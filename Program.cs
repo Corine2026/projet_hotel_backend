@@ -23,13 +23,16 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 
-// CORS
+// CORRECTION CORS : Définir une politique unique et cohérente (ex: "AllowAll")
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowReactApp", policy => 
-        policy.WithOrigins("http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174")
-              .AllowAnyHeader()
-              .AllowAnyMethod());
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
 // Authentification JWT
@@ -60,7 +63,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowReactApp");
+// CORRECTION PIPELINE : Appliquer la politique "AllowAll" définie plus haut
+app.UseCors("AllowAll");
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

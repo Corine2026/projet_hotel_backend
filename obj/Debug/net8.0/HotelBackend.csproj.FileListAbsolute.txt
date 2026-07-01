@@ -103,6 +103,7 @@
 /home/corine/HotelBackend/obj/Debug/net8.0/HotelBackend.csproj.CoreCompileInputs.cache
 /home/corine/HotelBackend/obj/Debug/net8.0/HotelBackend.MvcApplicationPartsAssemblyInfo.cs
 /home/corine/HotelBackend/obj/Debug/net8.0/HotelBackend.MvcApplicationPartsAssemblyInfo.cache
+/home/corine/HotelBackend/obj/Debug/net8.0/HotelBackend.sourcelink.json
 /home/corine/HotelBackend/obj/Debug/net8.0/staticwebassets.build.json
 /home/corine/HotelBackend/obj/Debug/net8.0/staticwebassets.development.json
 /home/corine/HotelBackend/obj/Debug/net8.0/staticwebassets/msbuild.HotelBackend.Microsoft.AspNetCore.StaticWebAssets.props

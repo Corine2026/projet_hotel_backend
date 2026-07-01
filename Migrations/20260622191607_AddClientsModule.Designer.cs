@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using HotelBackend.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace HotelBackend.Migrations
 {
     [DbContext(typeof(HotelDbContext))]
-    partial class HotelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260622191607_AddClientsModule")]
+    partial class AddClientsModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -290,54 +293,6 @@ namespace HotelBackend.Migrations
                     b.ToTable("Permissions");
                 });
 
-            modelBuilder.Entity("HotelBackend.Models.Reservation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ChambreId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ClientId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("DateCreation")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("DateDebut")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("DateFin")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("Montant")
-                        .HasColumnType("numeric");
-
-                    b.Property<string>("Numero")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Statut")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChambreId");
-
-                    b.HasIndex("ClientId");
-
-                    b.ToTable("Reservations");
-                });
-
             modelBuilder.Entity("HotelBackend.Models.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -542,25 +497,6 @@ namespace HotelBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("Utilisateur");
-                });
-
-            modelBuilder.Entity("HotelBackend.Models.Reservation", b =>
-                {
-                    b.HasOne("HotelBackend.Models.Chambre", "Chambre")
-                        .WithMany()
-                        .HasForeignKey("ChambreId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("HotelBackend.Models.Client", "Client")
-                        .WithMany()
-                        .HasForeignKey("ClientId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Chambre");
-
-                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("HotelBackend.Models.RolePermission", b =>
