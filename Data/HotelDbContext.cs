@@ -24,6 +24,9 @@ namespace HotelBackend.Data
         public DbSet<Client> Clients { get; set; }
         public DbSet<HistoriqueClient> HistoriqueClients { get; set; }
         public DbSet<Reservation> Reservations { get; set; }
+        public DbSet<DocumentIdentite> DocumentsIdentite { get; set; }
+        public DbSet<ScanDocument>     ScanDocuments     { get; set; }
+        public DbSet<HistoriqueScan>   HistoriqueScans   { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -56,6 +59,26 @@ namespace HotelBackend.Data
                       .HasColumnType("text[]")
                       .HasDefaultValueSql("'{}'::text[]");
             });
+
+            modelBuilder.Entity<DocumentIdentite>(entity => {
+    entity.Property(d => d.TypeDocument).HasConversion<string>();
+});
+
+modelBuilder.Entity<ScanDocument>(entity => {
+    entity.Property(s => s.Statut).HasConversion<string>();
+});
+
+modelBuilder.Entity<HistoriqueScan>()
+    .HasOne(h => h.Scan)
+    .WithMany(s => s.Historique)
+    .HasForeignKey(h => h.ScanId)
+    .OnDelete(DeleteBehavior.Cascade);
+
+modelBuilder.Entity<DocumentIdentite>()
+    .HasOne(d => d.Client)
+    .WithMany()
+    .HasForeignKey(d => d.ClientId)
+    .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Reservation>(entity =>
 {

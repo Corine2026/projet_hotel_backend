@@ -122,6 +122,49 @@ namespace HotelBackend.Migrations
                     b.ToTable("Clients", (string)null);
                 });
 
+            modelBuilder.Entity("HotelBackend.Models.DocumentIdentite", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ClientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DateDelivrance")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DateExpiration")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Numero")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PaysEmission")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhotoDocument")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhotoPortrait")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TypeDocument")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.ToTable("DocumentsIdentite");
+                });
+
             modelBuilder.Entity("HotelBackend.Models.HistoriqueClient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -175,6 +218,35 @@ namespace HotelBackend.Migrations
                     b.HasIndex("ChambreId");
 
                     b.ToTable("HistoriqueEtats", (string)null);
+                });
+
+            modelBuilder.Entity("HotelBackend.Models.HistoriqueScan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DateOperation")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Observation")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ScanId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Utilisateur")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ScanId");
+
+                    b.ToTable("HistoriqueScans");
                 });
 
             modelBuilder.Entity("HotelBackend.Models.JournalActivite", b =>
@@ -376,6 +448,42 @@ namespace HotelBackend.Migrations
                     b.ToTable("RolePermissions");
                 });
 
+            modelBuilder.Entity("HotelBackend.Models.ScanDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("DateScan")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("DocumentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ImageOriginale")
+                        .HasColumnType("text");
+
+                    b.Property<string>("QualiteImage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("ScoreConfiance")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("TexteOCR")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DocumentId");
+
+                    b.ToTable("ScanDocuments");
+                });
+
             modelBuilder.Entity("HotelBackend.Models.SessionUtilisateur", b =>
                 {
                     b.Property<Guid>("Id")
@@ -489,6 +597,17 @@ namespace HotelBackend.Migrations
                     b.Navigation("TypeChambre");
                 });
 
+            modelBuilder.Entity("HotelBackend.Models.DocumentIdentite", b =>
+                {
+                    b.HasOne("HotelBackend.Models.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+                });
+
             modelBuilder.Entity("HotelBackend.Models.HistoriqueClient", b =>
                 {
                     b.HasOne("HotelBackend.Models.Client", "Client")
@@ -509,6 +628,17 @@ namespace HotelBackend.Migrations
                         .IsRequired();
 
                     b.Navigation("Chambre");
+                });
+
+            modelBuilder.Entity("HotelBackend.Models.HistoriqueScan", b =>
+                {
+                    b.HasOne("HotelBackend.Models.ScanDocument", "Scan")
+                        .WithMany("Historique")
+                        .HasForeignKey("ScanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Scan");
                 });
 
             modelBuilder.Entity("HotelBackend.Models.JournalActivite", b =>
@@ -582,6 +712,15 @@ namespace HotelBackend.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("HotelBackend.Models.ScanDocument", b =>
+                {
+                    b.HasOne("HotelBackend.Models.DocumentIdentite", "Document")
+                        .WithMany("Scans")
+                        .HasForeignKey("DocumentId");
+
+                    b.Navigation("Document");
+                });
+
             modelBuilder.Entity("HotelBackend.Models.SessionUtilisateur", b =>
                 {
                     b.HasOne("HotelBackend.Models.Utilisateur", "Utilisateur")
@@ -601,6 +740,16 @@ namespace HotelBackend.Migrations
                 });
 
             modelBuilder.Entity("HotelBackend.Models.Client", b =>
+                {
+                    b.Navigation("Historique");
+                });
+
+            modelBuilder.Entity("HotelBackend.Models.DocumentIdentite", b =>
+                {
+                    b.Navigation("Scans");
+                });
+
+            modelBuilder.Entity("HotelBackend.Models.ScanDocument", b =>
                 {
                     b.Navigation("Historique");
                 });
