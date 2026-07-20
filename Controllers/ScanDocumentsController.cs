@@ -5,6 +5,7 @@ using HotelBackend.Data;
 using HotelBackend.DTOs;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Linq;
 
 namespace HotelBackend.Controllers
 {
@@ -42,8 +43,8 @@ namespace HotelBackend.Controllers
 
         /* ═══════════════════════════════════════════════════════════════
            POST: api/ScanDocuments/ocr
-           Reçoit une image en base64, l'envoie à Google Cloud Vision
-           (TEXT_DETECTION), et retourne le texte brut détecté.
+           Reçoit une image en base64, l'envoie à OCR.space (gratuit,
+           sans carte bancaire requise), et retourne le texte brut détecté.
            La clé API reste côté serveur — jamais exposée au frontend.
         ═══════════════════════════════════════════════════════════════ */
         [HttpPost("ocr")]
@@ -52,79 +53,72 @@ namespace HotelBackend.Controllers
             if (dto == null || string.IsNullOrWhiteSpace(dto.ImageBase64))
                 return BadRequest("Image manquante.");
 
-            var apiKey = _configuration["Google:VisionApiKey"];
+            var apiKey = _configuration["OcrSpace:ApiKey"];
             if (string.IsNullOrWhiteSpace(apiKey))
-                return StatusCode(500, "Clé API Google Vision non configurée sur le serveur.");
-
-            var requestBody = new
-            {
-                requests = new[]
-                {
-                    new
-                    {
-                        image = new { content = dto.ImageBase64 },
-                        features = new[] { new { type = "TEXT_DETECTION" } },
-                        imageContext = new { languageHints = new[] { "fr", "en" } }
-                    }
-                }
-            };
+                return StatusCode(500, "Clé API OCR.space non configurée sur le serveur.");
 
             var client = _httpClientFactory.CreateClient();
+
+            var formData = new Dictionary<string, string>
+            {
+                ["apikey"]           = apiKey,
+                ["base64Image"]      = $"data:image/jpeg;base64,{dto.ImageBase64}",
+                ["language"]         = "fre",
+                ["OCREngine"]        = "2",   // moteur 2 : plus précis, meilleur pour documents structurés
+                ["scale"]            = "true",
+                ["detectOrientation"]= "true",
+            };
+
             HttpResponseMessage response;
             try
             {
-                response = await client.PostAsJsonAsync(
-                    $"https://vision.googleapis.com/v1/images:annotate?key={apiKey}",
-                    requestBody);
+                response = await client.PostAsync(
+                    "https://api.ocr.space/parse/image",
+                    new FormUrlEncodedContent(formData));
             }
             catch (Exception ex)
             {
-                return StatusCode(502, $"Impossible de joindre Google Vision : {ex.Message}");
+                return StatusCode(502, $"Impossible de joindre OCR.space : {ex.Message}");
             }
+
+            var content = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
+                return StatusCode((int)response.StatusCode, $"Erreur OCR.space : {content}");
+
+            using var jsonDoc = JsonDocument.Parse(content);
+            var root = jsonDoc.RootElement;
+
+            if (root.TryGetProperty("IsErroredOnProcessing", out var errored) && errored.GetBoolean())
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                return StatusCode((int)response.StatusCode, $"Erreur Google Vision : {errorContent}");
+                string errMsg = "Erreur inconnue";
+                if (root.TryGetProperty("ErrorMessage", out var em))
+                {
+                    errMsg = em.ValueKind == JsonValueKind.Array
+                        ? string.Join("; ", em.EnumerateArray().Select(e => e.GetString()))
+                        : em.GetString() ?? errMsg;
+                }
+                return StatusCode(500, $"Erreur OCR.space : {errMsg}");
             }
 
-            using var stream = await response.Content.ReadAsStreamAsync();
-            var json = await JsonSerializer.DeserializeAsync<JsonElement>(stream);
-
-            if (!json.TryGetProperty("responses", out var responses) || responses.GetArrayLength() == 0)
-                return Ok(new OcrResultDto { Text = "", Confidence = 0 });
-
-            var firstResponse = responses[0];
-
-            if (firstResponse.TryGetProperty("error", out var errorElement))
+            string text = "";
+            if (root.TryGetProperty("ParsedResults", out var parsedResults) && parsedResults.GetArrayLength() > 0)
             {
-                var msg = errorElement.TryGetProperty("message", out var m) ? m.GetString() : "Erreur inconnue";
-                return StatusCode(500, $"Erreur Google Vision : {msg}");
+                var first = parsedResults[0];
+                if (first.TryGetProperty("ParsedText", out var pt))
+                    text = pt.GetString() ?? "";
             }
 
-            string fullText = "";
-            if (firstResponse.TryGetProperty("fullTextAnnotation", out var fullTextAnnotation)
-                && fullTextAnnotation.TryGetProperty("text", out var textProp))
-            {
-                fullText = textProp.GetString() ?? "";
-            }
-            else if (firstResponse.TryGetProperty("textAnnotations", out var textAnnotations)
-                     && textAnnotations.GetArrayLength() > 0
-                     && textAnnotations[0].TryGetProperty("description", out var descProp))
-            {
-                fullText = descProp.GetString() ?? "";
-            }
+            // OCR.space ne renvoie pas de score de confiance global. On estime
+            // une confiance raisonnable selon la longueur du texte détecté —
+            // suffisant pour piloter les seuils "success/blurry/error" déjà
+            // utilisés côté frontend.
+            double confidence = string.IsNullOrWhiteSpace(text) ? 0
+                               : text.Length > 40 ? 85
+                               : text.Length > 15 ? 65
+                               : 45;
 
-            // Google Vision (TEXT_DETECTION) ne renvoie pas de score de confiance
-            // global simple. On estime une confiance raisonnable selon la longueur
-            // du texte détecté — suffisant pour piloter les seuils "success/blurry/error"
-            // déjà utilisés côté frontend.
-            double confidence = string.IsNullOrWhiteSpace(fullText) ? 0
-                               : fullText.Length > 40 ? 92
-                               : fullText.Length > 15 ? 75
-                               : 50;
-
-            return Ok(new OcrResultDto { Text = fullText, Confidence = confidence });
+            return Ok(new OcrResultDto { Text = text, Confidence = confidence });
         }
 
         // POST: api/ScanDocuments/sauvegarder
